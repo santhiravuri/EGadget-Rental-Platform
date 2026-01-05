@@ -1,0 +1,32 @@
+<!doctype html>
+<html>
+  <body style="font-family:Arial,Helvetica,sans-serif; margin:0; padding:0; background:#f7f7f7;">
+    <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="background:#f7f7f7;">
+      <tr><td align="center">
+        <table role="presentation" width="600" cellspacing="0" cellpadding="20" style="background:#ffffff; margin:20px; border-radius:8px;">
+          <tr><td>
+            <h2 style="margin:0 0 10px;">Order Cancelled – eGadget Rent</h2>
+            <p style="margin:0 0 10px;">Order ID: {{ order._id }}</p>
+            <hr style="border:none; border-top:1px solid #ddd;">
+            <h3 style="margin:10px 0;">Items</h3>
+            <ul style="padding-left:16px;">
+              {% for it in order.items %}
+              <li style="margin-bottom:6px;">
+                {{ it.brand_name or it.brand or '' }} {{ it.model_name or it.name }} • Qty {{ it.quantity }}
+              </li>
+              {% endfor %}
+            </ul>
+            <p style="margin:10px 0;"><strong>Reason:</strong> {{ reason }}</p>
+            <p style="margin:10px 0;"><strong>Cancelled At:</strong> {{ cancelled_at }}</p>
+            {% if order.refund_status %}
+            <p style="margin:10px 0;"><strong>Refund Status:</strong> {{ order.refund_status }}</p>
+            {% endif %}
+            {% if refund_timeline %}
+            <p style="margin:10px 0;"><strong>Expected Refund Timeline:</strong> {{ refund_timeline }}</p>
+            {% endif %}
+          </td></tr>
+        </table>
+      </td></tr>
+    </table>
+  </body>
+</html>

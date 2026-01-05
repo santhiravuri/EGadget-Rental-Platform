@@ -1,0 +1,58 @@
+{% extends 'base.html' %}
+{% block title %}Login - eGadget Rent{% endblock %}
+{% block content %}
+<style>
+  .auth-bg { min-height: calc(100vh - 56px); background: url('https://images.unsplash.com/photo-1518770660439-4636190af475?w=1600') center/cover no-repeat; }
+  .glass-card { backdrop-filter: blur(12px); background: rgba(255,255,255,0.12); border: 1px solid rgba(255,255,255,0.25); }
+  .auth-card { width: 100%; max-width: 420px; margin: 0 auto; border: 0; border-radius: 18px; box-shadow: 0 16px 36px rgba(0,0,0,.24); }
+  .auth-title { font-weight: 700; }
+  .auth-sub { opacity: .85; }
+  .auth-input { border-radius: 12px; }
+  .password-group { position: relative; }
+  .toggle-password { position: absolute; right: 1rem; top: 50%; transform: translateY(-50%); border: none; background: transparent; color: #6c757d; z-index: 5; cursor: pointer; }
+</style>
+<div class="auth-bg d-flex align-items-center">
+  <div class="container py-5 d-flex justify-content-center">
+    <div class="card auth-card glass-card text-white">
+      <div class="card-body p-4">
+        <h3 class="auth-title text-center mb-1">eGadget Rent</h3>
+        <p class="auth-sub text-center mb-4">Rent gadgets smarter, faster</p>
+        <form method="post" novalidate>
+          <div class="form-floating mb-3">
+            <input type="text" name="email" class="form-control auth-input" id="emailInput" placeholder="Email or mobile number" required>
+            <label for="emailInput" class="text-dark">Email or mobile number</label>
+          </div>
+          <div class="form-floating mb-3 password-group">
+            <input type="password" name="password" class="form-control auth-input" id="passwordField" placeholder="Password" required>
+            <label for="passwordField" class="text-dark">Password</label>
+            <button type="button" class="toggle-password" id="togglePassword" aria-label="Show or hide password">
+              <i class="bi bi-eye-fill" id="togglePasswordIcon"></i>
+            </button>
+          </div>
+          <button class="btn btn-success w-100" type="submit"><i class="bi bi-box-arrow-in-right me-1"></i> Login</button>
+          <div class="d-flex justify-content-between mt-3">
+            <a href="{{ url_for('forgot_password') }}" class="text-white text-decoration-underline">Forgot Password?</a>
+            <a href="{{ url_for('register') }}" class="text-white text-decoration-underline">New user? Register here</a>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+  const toggles = document.querySelectorAll('.password-group .toggle-password');
+  if (toggles.length > 1) {
+    toggles.forEach((btn, idx) => { if (idx > 0) btn.remove(); });
+  }
+  const toggleBtn = document.getElementById('togglePassword');
+  const pwd = document.getElementById('passwordField');
+  const icon = document.getElementById('togglePasswordIcon');
+  toggleBtn?.addEventListener('click', function() {
+    const isPassword = pwd.getAttribute('type') === 'password';
+    pwd.setAttribute('type', isPassword ? 'text' : 'password');
+    icon.className = isPassword ? 'bi bi-eye-slash-fill' : 'bi bi-eye-fill';
+  });
+});
+</script>
+{% endblock %}

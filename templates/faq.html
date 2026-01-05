@@ -1,0 +1,33 @@
+{% extends 'base.html' %}
+{% block title %}FAQ - eGadget Rent{% endblock %}
+{% block content %}
+<div class="container">
+  <h2>Frequently Asked Questions</h2>
+  <div class="accordion" id="faqAccordion">
+    <div class="accordion-item">
+      <h2 class="accordion-header">
+        <button class="accordion-button" data-bs-toggle="collapse" data-bs-target="#q1">
+          How does renting work?
+        </button>
+      </h2>
+      <div id="q1" class="accordion-collapse collapse show">
+        <div class="accordion-body">
+          Choose a product, select days, quantity, delivery date, and place order.
+        </div>
+      </div>
+    </div>
+    <div class="accordion-item">
+      <h2 class="accordion-header">
+        <button class="accordion-button collapsed" data-bs-toggle="collapse" data-bs-target="#q2">
+          Is security deposit refundable?
+        </button>
+      </h2>
+      <div id="q2" class="accordion-collapse collapse">
+        <div class="accordion-body">
+          Yes, the deposit is fully refundable after product return.
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

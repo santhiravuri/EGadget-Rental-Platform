@@ -1,0 +1,93 @@
+{% extends 'base.html' %}
+{% block title %}Catalog - eGadget Rent{% endblock %}
+{% block content %}
+<div class="d-flex flex-wrap gap-2 mb-3 align-items-center">
+  <a href="{{ url_for('catalog') }}" class="btn btn-sm btn-outline-secondary {% if not selected_category %}active{% endif %}">All</a>
+  {% for cat in categories %}
+    <a href="{{ url_for('catalog') }}?category={{ cat }}" class="btn btn-sm btn-outline-secondary {% if selected_category==cat %}active{% endif %}">{{ cat }}</a>
+  {% endfor %}
+  <span class="ms-auto text-muted">Showing {{ products|length }} items</span>
+</div>
+
+<h5 class="mb-3">{% if selected_category %}{{ selected_category }}{% else %}All Categories{% endif %} {% if selected_sub %}- {{ selected_sub }}{% endif %}</h5>
+
+<div class="row g-3 mb-4">
+  {% set total = products|length %}
+  {%- if selected_sub or selected_category %}
+    {# For subcategory/category pages, determine desired count based on actual products #}
+    {% if total >= 14 %}
+      {% set desired = 14 %}
+    {% elif total >= 12 %}
+      {% set desired = 12 %}
+    {% elif total >= 9 %}
+      {% set desired = 9 %}
+    {% else %}
+      {% set desired = 9 %}
+    {% endif %}
+  {%- else %}
+    {% set desired = 12 %}
+  {%- endif %}
+  {% set needed = (desired - total) if total < desired else 0 %}
+  {% for p in products %}
+  <div class="col-6 col-md-4 col-lg-4">
+    <a href="{{ url_for('product_detail', product_id=p.id) }}" class="card h-100 card-hover text-decoration-none text-reset product-link">
+      <img src="{{ p.image_url or url_for('static', filename='images/placeholder.png') }}" class="card-img-top object-fit-contain p-3 img-hover" style="height:180px;" alt="{{ (p.brand_name or p.brand or '') }} {{ p.model_name or p.name }}">
+      <div class="card-body d-flex flex-column">
+        <h6 class="card-title mb-1">{{ (p.brand_name or p.brand or '') }} {{ p.model_name or p.name }}</h6>
+        <div class="small text-muted">{{ p.brand_name or p.brand or '' }} • {{ p.category }}{% if p.subcategory or p.sub %} • {{ p.subcategory or p.sub }}{% endif %}{% if p.condition %} • {{ p.condition }}{% endif %}</div>
+        <div class="mt-1">
+          {% if p.available %}
+            <span class="badge bg-success">Available</span>
+          {% else %}
+            <span class="badge bg-secondary">Unavailable</span>
+          {% endif %}
+        </div>
+        {% if p.get('avg_rating') %}
+          <div class="mb-2">
+            <span class="text-warning small">
+              {% for i in range(1,6) %}
+                {% if i <= p.avg_rating|int %}<i class="bi bi-star-fill"></i>{% else %}<i class="bi bi-star"></i>{% endif %}
+              {% endfor %}
+            </span>
+            <span class="text-muted small ms-1">({{ p.reviews_count }})</span>
+          </div>
+        {% endif %}
+        <div class="mt-auto d-flex justify-content-between align-items-center">
+          <span class="fw-bold">₹ {{ '%.2f'|format(p.rent_per_day or 0) }}/day</span>
+          <span class="btn btn-sm btn-outline-primary btn-hover">View Details</span>
+        </div>
+      </div>
+    </a>
+  </div>
+  {% endfor %}
+
+  {% if needed > 0 %}
+    {% for i in range(needed) %}
+    <div class="col-6 col-md-4 col-lg-4">
+      <div class="card h-100 border-0 bg-light placeholder-card">
+        <div class="card-body d-flex flex-column justify-content-center align-items-center text-center py-4">
+          <div class="mb-2 text-muted">More items coming soon</div>
+          <div class="text-muted small">&nbsp;</div>
+        </div>
+      </div>
+    </div>
+    {% endfor %}
+  {% endif %}
+
+  {% if not products %}
+    <div class="col-12 text-center text-muted py-5">No items found for this filter</div>
+  {% endif %}
+</div>
+
+<!-- SECOND PROMOTIONAL BANNER -->
+<div class="container mb-4">
+  <div class="promo-banner p-4 rounded text-center text-white" style="background: linear-gradient(90deg, #0066cc 0%, #00aaff 50%, #33ccff 100%);">
+    <h5 class="mb-2">Special Winter Offer!</h5>
+    <p class="mb-0">Rent any gadget today and get an extra 15% off. Limited time only!</p>
+  </div>
+</div>
+
+<!-- ALL CATEGORY PRODUCTS BELOW SECOND BANNER -->
+<!-- Removed all-products section to avoid showing unrelated items -->
+
+{% endblock %}

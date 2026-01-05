@@ -1,0 +1,235 @@
+{% extends 'base.html' %}
+{% block title %}Register - eGadget Rent{% endblock %}
+{% block content %}
+<style>
+  .auth-bg { min-height: calc(100vh - 56px); background: url('https://images.unsplash.com/photo-1519389950473-47ba0277781c?w=1600') center/cover no-repeat; }
+  .glass-card { backdrop-filter: blur(12px); background: rgba(255,255,255,0.12); border: 1px solid rgba(255,255,255,0.25); }
+  .auth-card { width: 100%; max-width: 520px; margin: 0 auto; border: 0; border-radius: 18px; box-shadow: 0 16px 36px rgba(0,0,0,.24); }
+  .auth-title { font-weight: 800; letter-spacing: .2px; }
+  .auth-sub { opacity: .9; }
+  .auth-input { border-radius: 12px; background: #ffffff; border: 1px solid rgba(255,255,255,0.35); color: var(--text-primary); caret-color: var(--text-primary); }
+  .auth-input::placeholder { color: #6c757d; opacity: .95; }
+  .dark .auth-input::placeholder { color: #a0a0a0; }
+  .auth-input:focus { background: #ffffff; color: var(--text-primary); border-color: rgba(255,255,255,0.55); box-shadow: 0 0 0 0.2rem rgba(37,99,235,0.25); outline: none; }
+  .otp-digit { background: rgba(255,255,255,0.18); color: #fff; caret-color: #fff; }
+</style>
+<div class="auth-bg d-flex align-items-center">
+  <div class="container py-5 d-flex justify-content-center">
+    <div class="card auth-card glass-card text-white">
+      <div class="card-body p-4 p-md-5">
+        <div class="text-center mb-3">
+          <h3 class="auth-title mb-1">Create Account</h3>
+          <p class="auth-sub">Join us to rent the latest gadgets</p>
+        </div>
+        <form method="post" id="registerForm" novalidate>
+          <div class="mb-3">
+            <label for="fullname" class="form-label fw-semibold text-white-50">Full Name</label>
+            <input type="text" name="fullname" class="form-control auth-input form-control-lg" id="fullname" placeholder="John Doe" required>
+          </div>
+          <div class="mb-3">
+            <label for="email" class="form-label fw-semibold text-white-50">Email Address</label>
+            <div class="input-group">
+              <input type="email" name="email" class="form-control auth-input form-control-lg" id="email" placeholder="name@example.com" required>
+              <button type="button" class="btn btn-primary" id="sendOtpBtn">Send OTP</button>
+            </div>
+          </div>
+          <div class="mb-3" id="otpGroup" style="display:none;">
+            <label class="form-label fw-semibold text-white-50" data-bs-toggle="tooltip" title="Enter the 6-digit code sent to your email">
+              Enter OTP <i class="bi bi-info-circle ms-1"></i>
+            </label>
+            <div class="d-flex gap-2 justify-content-center mb-2" id="otp-container">
+              <input type="text" class="form-control text-center p-0 rounded-2 border-primary otp-digit" maxlength="1" style="width: 45px; height: 45px; font-size: 1.25rem;" required pattern="[0-9]">
+              <input type="text" class="form-control text-center p-0 rounded-2 border-primary otp-digit" maxlength="1" style="width: 45px; height: 45px; font-size: 1.25rem;" required pattern="[0-9]">
+              <input type="text" class="form-control text-center p-0 rounded-2 border-primary otp-digit" maxlength="1" style="width: 45px; height: 45px; font-size: 1.25rem;" required pattern="[0-9]">
+              <input type="text" class="form-control text-center p-0 rounded-2 border-primary otp-digit" maxlength="1" style="width: 45px; height: 45px; font-size: 1.25rem;" required pattern="[0-9]">
+              <input type="text" class="form-control text-center p-0 rounded-2 border-primary otp-digit" maxlength="1" style="width: 45px; height: 45px; font-size: 1.25rem;" required pattern="[0-9]">
+              <input type="text" class="form-control text-center p-0 rounded-2 border-primary otp-digit" maxlength="1" style="width: 45px; height: 45px; font-size: 1.25rem;" required pattern="[0-9]">
+            </div>
+              <input type="hidden" name="otp" id="otp-hidden" required>
+              <div class="form-text text-success text-center"><i class="bi bi-check-circle me-1"></i>OTP sent to your email</div>
+          </div>
+          <div class="mb-3">
+            <label for="mobile" class="form-label fw-semibold text-white-50">Mobile Number</label>
+            <input type="tel" name="mobile" class="form-control auth-input form-control-lg" id="mobile" placeholder="10-digit mobile number" pattern="[0-9]{10}" required>
+          </div>
+          <div class="row g-2 mb-4">
+            <div class="col-md-6">
+              <label for="pwd" class="form-label fw-semibold text-white-50">Password</label>
+              <input type="password" name="password" class="form-control auth-input form-control-lg" id="pwd" required>
+            </div>
+            <div class="col-md-6">
+              <label for="confirmPwd" class="form-label fw-semibold text-white-50">Confirm</label>
+              <input type="password" name="confirm_password" class="form-control auth-input form-control-lg" id="confirmPwd" required>
+            </div>
+            <div class="col-12">
+              <div class="progress mt-2" style="height: 4px;">
+                <div class="progress-bar bg-danger" id="strengthBar" role="progressbar" style="width: 0%"></div>
+              </div>
+            </div>
+          </div>
+          <button class="btn btn-success w-100 btn-lg rounded-3 fw-bold mb-3" type="submit" id="registerBtn">
+            <i class="bi bi-person-plus-fill me-2"></i>Register
+          </button>
+          <div class="text-center mt-3">
+            <span class="text-white-50">Already have an account?</span>
+            <a href="{{ url_for('login') }}" class="fw-semibold ms-1 text-white">Login here</a>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+  // Initialize Tooltips
+  const tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
+  const tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {
+    return new bootstrap.Tooltip(tooltipTriggerEl);
+  });
+
+  const pwd = document.getElementById('pwd');
+  const bar = document.getElementById('strengthBar');
+  const sendOtpBtn = document.getElementById('sendOtpBtn');
+  const otpGroup = document.getElementById('otpGroup');
+  const emailInput = document.getElementById('email');
+  const registerBtn = document.getElementById('registerBtn');
+  
+  const otpDigits = document.querySelectorAll('.otp-digit');
+  const otpHidden = document.getElementById('otp-hidden');
+
+  // Initial state: Disable register button
+  if (registerBtn) registerBtn.disabled = true;
+
+  // OTP Input Logic
+  otpDigits.forEach((input, index) => {
+    input.addEventListener('keydown', (e) => {
+      if (e.key === 'Backspace' && !e.target.value && index > 0) {
+        otpDigits[index - 1].focus();
+      }
+    });
+
+    input.addEventListener('input', (e) => {
+      const val = e.target.value;
+      
+      // Auto-focus next
+      if (val && index < otpDigits.length - 1) {
+        otpDigits[index + 1].focus();
+      }
+
+      updateHiddenOtp();
+    });
+
+    input.addEventListener('paste', (e) => {
+      e.preventDefault();
+      const pasteData = (e.clipboardData || window.clipboardData).getData('text');
+      const digits = pasteData.replace(/\D/g, '').split(''); // Only digits
+      
+      if (digits.length > 0) {
+        otpDigits.forEach((inp, i) => {
+          if (digits[i]) inp.value = digits[i];
+        });
+        updateHiddenOtp();
+        // Focus last filled
+        const focusIndex = Math.min(digits.length, otpDigits.length) - 1;
+        if (focusIndex >= 0) otpDigits[focusIndex].focus();
+      }
+    });
+  });
+
+  function updateHiddenOtp() {
+    let fullOtp = '';
+    let allFilled = true;
+    otpDigits.forEach(inp => {
+      fullOtp += inp.value;
+      if (!inp.value) allFilled = false;
+    });
+    otpHidden.value = fullOtp;
+    
+    // Enable register button only if 6 digits
+    if (registerBtn) {
+        registerBtn.disabled = !allFilled || fullOtp.length !== 6;
+    }
+  }
+
+  function score(s) {
+    let v = 0;
+    if (s.length >= 8) v += 25;
+    if (/[A-Z]/.test(s)) v += 25;
+    if (/[0-9]/.test(s)) v += 25;
+    if (/[^A-Za-z0-9]/.test(s)) v += 25;
+    return v;
+  }
+  
+  pwd?.addEventListener('input', () => {
+    const v = score(pwd.value);
+    bar.style.width = v + '%';
+    bar.className = 'progress-bar ' + (v < 50 ? 'bg-danger' : v < 75 ? 'bg-warning' : 'bg-success');
+  });
+
+  sendOtpBtn?.addEventListener('click', async () => {
+    const email = emailInput.value.trim();
+    if (!email) {
+      alert('Please enter a valid email address first.');
+      emailInput.focus();
+      return;
+    }
+
+    // Basic email validation
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email)) {
+        alert('Please enter a valid email address.');
+        emailInput.focus();
+        return;
+    }
+
+    try {
+      sendOtpBtn.disabled = true;
+      const originalText = sendOtpBtn.textContent;
+      sendOtpBtn.innerHTML = '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Sending...';
+
+      const formData = new FormData();
+      formData.append('email', email);
+
+      const res = await fetch('/api/auth/send-otp', {
+        method: 'POST',
+        body: formData
+      });
+      const data = await res.json();
+
+      if (data.ok) {
+        otpGroup.style.display = 'block';
+        sendOtpBtn.textContent = 'Resend OTP';
+        sendOtpBtn.classList.replace('btn-primary', 'btn-outline-primary');
+        
+        // Focus first digit
+        if(otpDigits.length > 0) otpDigits[0].focus();
+        
+        // Cooldown
+        let countdown = 60;
+        sendOtpBtn.disabled = true;
+        const timer = setInterval(() => {
+            sendOtpBtn.textContent = `Resend in ${countdown}s`;
+            countdown--;
+            if (countdown < 0) {
+                clearInterval(timer);
+                sendOtpBtn.disabled = false;
+                sendOtpBtn.textContent = 'Resend OTP';
+            }
+        }, 1000);
+        
+      } else {
+        alert(data.message || 'Failed to send OTP');
+        sendOtpBtn.disabled = false;
+        sendOtpBtn.textContent = originalText;
+      }
+    } catch (err) {
+      console.error(err);
+      alert('An error occurred while sending OTP.');
+      sendOtpBtn.disabled = false;
+      sendOtpBtn.textContent = 'Send OTP';
+    }
+  });
+});
+</script>
+{% endblock %}

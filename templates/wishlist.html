@@ -1,0 +1,131 @@
+{% extends 'base.html' %}
+{% block title %}Wishlist - eGadget Rent{% endblock %}
+{% block content %}
+<h4 class="mb-3">Your Wishlist</h4>
+<div class="row g-3">
+  {% for p in products %}
+  <div class="col-6 col-md-4 col-lg-3">
+    <div class="card h-100 card-hover">
+      <img src="{{ p.image_url or url_for('static', filename='images/placeholder.png') }}" class="card-img-top object-fit-contain p-3" style="height:160px;" alt="{{ p.name }}">
+      <div class="card-body d-flex flex-column">
+        <h6 class="card-title mb-1">{{ p.name }}</h6>
+        <div class="small text-muted">{{ p.brand or '' }} • {{ p.category }}{% if p.subcategory or p.sub %} • {{ p.subcategory or p.sub }}{% endif %}</div>
+        <div class="mt-auto d-flex flex-column gap-2">
+          <span class="fw-bold">₹ {{ '%.2f'|format(p.rent_per_day or 0) }}/day</span>
+          <div class="d-flex gap-2">
+            <button type="button" class="btn btn-sm btn-primary btn-add-cart" data-product-id="{{ p.id }}">Add to Cart</button>
+            <button type="button" class="btn btn-sm btn-outline-danger btn-remove-wishlist" data-product-id="{{ p.id }}">Remove</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  {% endfor %}
+  {% if not products %}
+  <div class="col-12 text-center text-muted py-5">No items saved yet.</div>
+  {% endif %}
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+  const addCartButtons = document.querySelectorAll('.btn-add-cart');
+  addCartButtons.forEach(btn => {
+    btn.addEventListener('click', async () => {
+      const pid = btn.dataset.productId;
+      const formData = new FormData();
+      formData.append('product_id', pid);
+      
+      try {
+        btn.disabled = true;
+        btn.textContent = 'Adding...';
+        
+        const res = await fetch('{{ url_for("api_wishlist_to_cart") }}', {
+          method: 'POST',
+          body: formData
+        });
+        const data = await res.json();
+        
+        if (data.ok) {
+          // Update cart badge if exists
+          const badge = document.getElementById('cart-badge');
+          if (badge) badge.textContent = data.cart_count;
+          
+          // Remove item from wishlist UI
+          const cardCol = btn.closest('.col-6');
+          if (cardCol) {
+             cardCol.remove();
+             // Check if empty
+             if (document.querySelectorAll('.col-6').length === 0) {
+                document.querySelector('.row.g-3').innerHTML = '<div class="col-12 text-center text-muted py-5">No items saved yet.</div>';
+             }
+          }
+          
+          // Optional: Show success toast/message
+        } else {
+          alert(data.message || 'Failed to add to cart');
+          btn.disabled = false;
+          btn.textContent = 'Add to Cart';
+        }
+      } catch (err) {
+        console.error(err);
+        alert('An error occurred');
+        btn.disabled = false;
+        btn.textContent = 'Add to Cart';
+      }
+    });
+  });
+
+  const removeWishlistButtons = document.querySelectorAll('.btn-remove-wishlist');
+  removeWishlistButtons.forEach(btn => {
+    btn.addEventListener('click', async () => {
+      const pid = btn.dataset.productId;
+      const formData = new FormData();
+      formData.append('product_id', pid);
+      
+      try {
+        btn.disabled = true;
+        btn.textContent = '...';
+        
+        const res = await fetch('{{ url_for("api_wishlist_remove") }}', {
+          method: 'POST',
+          body: formData
+        });
+        const data = await res.json();
+        
+        if (data.ok) {
+           // Remove item from wishlist UI
+           const cardCol = btn.closest('.col-6');
+           if (cardCol) {
+              cardCol.remove();
+              // Check if empty
+              if (document.querySelectorAll('.col-6').length === 0) {
+                 document.querySelector('.row.g-3').innerHTML = '<div class="col-12 text-center text-muted py-5">No items saved yet.</div>';
+              }
+           }
+           
+           // Update wishlist badge in nav
+           // We need to find the badge. The nav badge might not have an ID, so let's use a selector.
+           // In base.html: <a href="{{ url_for('wishlist_page') }}"> ... <span class="badge ...">
+           const wishlistBadge = document.querySelector('a[href*="wishlist"] .badge');
+           if (wishlistBadge) {
+             wishlistBadge.textContent = data.wishlist_count;
+             if (data.wishlist_count === 0) wishlistBadge.remove();
+           }
+        } else {
+           alert(data.message || 'Failed to remove');
+           btn.disabled = false;
+           btn.textContent = 'Remove';
+        }
+      } catch (err) {
+        console.error(err);
+        alert('An error occurred');
+        btn.disabled = false;
+        btn.textContent = 'Remove';
+      }
+    });
+  });
+});
+</script>
+{% endblock %}
+
+

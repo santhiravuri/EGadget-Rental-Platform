@@ -1,0 +1,25 @@
+{% extends 'base.html' %}
+{% block title %}Verify OTP - eGadget Rent{% endblock %}
+{% block content %}
+<div class="auth-bg d-flex align-items-center" style="min-height: calc(100vh - 56px); background: url('https://images.unsplash.com/photo-1518770660439-4636190af475?w=1600') center/cover no-repeat;">
+  <div class="container py-5 d-flex justify-content-center">
+    <div class="card glass-card text-white" style="max-width:460px; width:100%; backdrop-filter: blur(12px); background: rgba(255,255,255,0.12); border: 1px solid rgba(255,255,255,0.25); border-radius: 18px;">
+      <div class="card-body p-4">
+        <h3 class="text-center mb-1">Verify OTP</h3>
+        <p class="text-center mb-4">Enter the 6-digit code</p>
+        <form method="post">
+          <div class="d-flex justify-content-between gap-2 mb-3">
+            <input type="text" maxlength="6" inputmode="numeric" name="otp" class="form-control text-center" style="height:52px; font-size:22px;" required>
+          </div>
+          <div class="d-flex justify-content-between mb-3">
+            <button class="btn btn-success w-100" type="submit">Verify OTP</button>
+          </div>
+        </form>
+        <form method="post" action="{{ url_for('resend_otp') }}">
+          <button class="btn btn-outline-light w-100" type="submit">Resend OTP</button>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

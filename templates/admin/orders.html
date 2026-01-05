@@ -1,0 +1,41 @@
+{% extends 'base.html' %}
+{% block title %}Admin Orders - eGadget Rent{% endblock %}
+{% block content %}
+<div class="d-flex align-items-center mb-3">
+  <h4 class="mb-0">Orders</h4>
+</div>
+<div class="card">
+  <div class="card-body">
+    <div class="table-responsive">
+      <table class="table table-sm align-middle">
+        <thead><tr><th>ID</th><th>User</th><th>Total</th><th>Status</th><th>Date</th><th>Actions</th></tr></thead>
+        <tbody>
+        {% for o in orders %}
+          <tr>
+            <td>{{ o._id }}</td>
+            <td>{{ o.user_id }}</td>
+            <td>₹ {{ '%.2f'|format(o.total or 0) }}</td>
+            <td>{{ o.status }}</td>
+            <td>{{ o.created_at.strftime('%Y-%m-%d %H:%M') if o.created_at }}</td>
+            <td class="text-end">
+              <form class="d-inline" method="post" action="{{ url_for('admin_order_update_status', order_id=o._id) }}">
+                <select class="form-select form-select-sm d-inline w-auto" name="status" aria-label="Update status">
+                  <option value="Paid" {% if o.status == 'Paid' %}selected{% endif %}>Paid</option>
+                  <option value="Pending Payment" {% if o.status == 'Pending Payment' %}selected{% endif %}>Pending</option>
+                  <option value="Cancelled" {% if o.status == 'Cancelled' %}selected{% endif %}>Cancelled</option>
+                  <option value="Confirmed" {% if o.status == 'Confirmed' %}selected{% endif %}>Confirmed</option>
+                  <option value="Dispatched" {% if o.status == 'Dispatched' %}selected{% endif %}>Dispatched</option>
+                  <option value="Delivered" {% if o.status == 'Delivered' %}selected{% endif %}>Delivered</option>
+                  <option value="Returned" {% if o.status == 'Returned' %}selected{% endif %}>Returned</option>
+                </select>
+                <button class="btn btn-sm btn-outline-primary ms-2">Update</button>
+              </form>
+            </td>
+          </tr>
+        {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+{% endblock %}

@@ -1,0 +1,37 @@
+{% extends 'base.html' %}
+{% block title %}Admin Products - eGadget Rent{% endblock %}
+{% block content %}
+<div class="d-flex align-items-center mb-3">
+  <h4 class="mb-0">Products</h4>
+  <a class="btn btn-primary ms-auto" href="{{ url_for('admin_product_new') }}">+ Add Product</a>
+</div>
+<div class="card">
+  <div class="card-body">
+    <div class="table-responsive">
+      <table class="table table-sm align-middle">
+        <thead>
+          <tr>
+            <th>Product</th><th>Category</th><th>Rent/day</th><th>Available</th><th></th>
+          </tr>
+        </thead>
+        <tbody>
+        {% for p in products %}
+          <tr>
+            <td><strong>{{ (p.brand_name or p.brand or '') }} {{ p.model_name or p.name }}</strong></td>
+            <td>{{ p.category }}</td>
+            <td>₹ {{ '%.2f'|format(p.rent_per_day or 0) }}</td>
+            <td>{% if p.available %}<span class="badge bg-success">Yes</span>{% else %}<span class="badge bg-secondary">No</span>{% endif %}</td>
+            <td class="text-end">
+              <a class="btn btn-sm btn-outline-secondary" href="{{ url_for('admin_product_edit', product_id=p.id or p._id) }}">Edit</a>
+              <form class="d-inline" method="post" action="{{ url_for('admin_product_delete', product_id=p.id or p._id) }}" onsubmit="return confirm('Delete this product?')">
+                <button class="btn btn-sm btn-outline-danger">Delete</button>
+              </form>
+            </td>
+          </tr>
+        {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+  </div>
+{% endblock %}

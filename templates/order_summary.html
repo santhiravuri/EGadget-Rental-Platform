@@ -1,0 +1,181 @@
+{% extends 'base.html' %}
+{% block title %}Order Summary - eGadget Rent{% endblock %}
+{% block extra_head %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/order_success.css') }}">
+{% endblock %}
+{% block content %}
+<div class="row g-4">
+  <div class="col-md-5">
+    <div class="card h-100">
+      <img src="{{ rental.image_url or url_for('static', filename='images/placeholder.png') }}" class="card-img-top object-fit-contain p-3" style="height:240px;" alt="{{ (rental.brand_name or rental.brand or '') }} {{ rental.model_name or rental.name }}">
+      <div class="card-body">
+        <div class="fw-semibold">{{ (rental.brand_name or rental.brand or '') }} {{ rental.model_name or rental.name }}</div>
+        <div class="small text-muted">{{ rental.category }}{% if rental.subcategory %} • {{ rental.subcategory }}{% endif %}</div>
+        <div class="mt-2"><span class="badge bg-success">Available</span></div>
+      </div>
+    </div>
+  </div>
+  <div class="col-md-7">
+    <div class="card">
+      <div class="card-body">
+        <h5 class="mb-3">Rental Details</h5>
+        <ul class="list-unstyled mb-3">
+          <li>Days: <strong>{{ rental.days }}</strong></li>
+          <li>Quantity: <strong>{{ rental.quantity }}</strong></li>
+          <li>Delivery Date: <strong>{{ rental.delivery_date }}</strong></li>
+          <li>Location: <strong id="summaryLocation">{{ rental.location or '' }}</strong></li>
+          <li>Rent Per Day: <strong>₹ {{ '%.2f'|format(rental.rent_per_day or 0) }}</strong></li>
+        </ul>
+        <div class="d-flex justify-content-between align-items-center">
+          <div>
+            <div class="small text-muted">Security Deposit (refundable)</div>
+            <div class="fw-semibold">₹ {{ '%.2f'|format(rental.deposit or 0) }}</div>
+          </div>
+          <div>
+            <div class="small text-muted">Total Price</div>
+            <div class="h5 mb-0">₹ {{ '%.2f'|format(rental.total or 0) }}</div>
+          </div>
+        </div>
+        <hr class="my-3">
+        <h6 class="mb-2">Payment Method</h6>
+        <div class="mb-3">
+          <div class="form-check">
+            <input class="form-check-input" type="radio" name="paymentMethod" id="pmUpi" value="UPI">
+            <label class="form-check-label" for="pmUpi">UPI</label>
+          </div>
+          <div class="ps-4 pt-2" id="upiSection" style="display:none">
+            <div class="row g-2">
+              <div class="col-sm-6">
+                <label class="form-label">UPI App</label>
+                <select id="upiApp" class="form-select">
+                  <option value="">Select App</option>
+                  <option>Google Pay</option>
+                  <option>PhonePe</option>
+                  <option>Paytm</option>
+                </select>
+              </div>
+              <div class="col-sm-6">
+                <label class="form-label">UPI ID</label>
+                <input id="upiId" type="text" class="form-control" placeholder="name@upi">
+                <div class="text-danger small mt-1" id="upiError" style="display:none">Enter a valid UPI ID (e.g. name@bank)</div>
+              </div>
+            </div>
+          </div>
+          <div class="form-check mt-2">
+            <input class="form-check-input" type="radio" name="paymentMethod" id="pmCod" value="COD">
+            <label class="form-check-label" for="pmCod">Cash on Delivery (COD)</label>
+          </div>
+          <div class="ps-4 pt-2" id="codSection" style="display:none">
+            <div class="alert alert-info mb-0">Pay ₹{{ '%.2f'|format(rental.total or 0) }} at the time of delivery</div>
+          </div>
+        </div>
+        <div class="mt-3 d-flex gap-2">
+          <button class="btn btn-primary" id="confirmBtn" disabled>
+            <span id="confirmText">Confirm & Place Order</span>
+            <span id="confirmLoading" class="spinner-border spinner-border-sm ms-2" style="display:none" role="status" aria-hidden="true"></span>
+          </button>
+          <a class="btn btn-outline-secondary" href="{{ url_for('product_detail', product_id=rental.product_id) }}">Back</a>
+        </div>
+      </div>
+    </div>
+  </div>
+<!-- Success Overlay -->
+<div class="success-overlay" id="successOverlay" style="display:none">
+  <canvas id="confetti"></canvas>
+  <div class="success-card">
+    <div class="success-icon">
+      <i class="bi bi-check-circle-fill"></i>
+    </div>
+    <h2>Order Successfully Placed</h2>
+    <p>Your rental order has been confirmed. Thank you!</p>
+    <div class="mt-3">
+      <a href="{{ url_for('user_orders') }}" class="btn btn-success me-2" id="viewOrdersBtn">View My Orders</a>
+      <a href="{{ url_for('home') }}" class="btn btn-outline-primary" id="continueBtn">Continue Browsing</a>
+    </div>
+  </div>
+  </div>
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+  const pmUpi = document.getElementById('pmUpi');
+  const pmCod = document.getElementById('pmCod');
+  const upiSection = document.getElementById('upiSection');
+  const codSection = document.getElementById('codSection');
+  const upiId = document.getElementById('upiId');
+  const upiApp = document.getElementById('upiApp');
+  const upiError = document.getElementById('upiError');
+  const confirmBtn = document.getElementById('confirmBtn');
+  const confirmText = document.getElementById('confirmText');
+  const confirmLoading = document.getElementById('confirmLoading');
+  const successOverlay = document.getElementById('successOverlay');
+  function validUpi(id) {
+    return /^[a-zA-Z0-9._-]+@[a-zA-Z0-9._-]+$/.test(id.trim());
+  }
+  function validateAll() {
+    const method = pmUpi.checked ? 'UPI' : (pmCod.checked ? 'COD' : '');
+    let upiOk = true;
+    if (method === 'UPI') {
+      upiOk = validUpi(upiId.value) && upiApp.value.trim().length > 0;
+    }
+    const allOk = method && upiOk;
+    confirmBtn.disabled = !allOk;
+    return allOk;
+  }
+  function showErrors() {
+    if (pmUpi.checked) {
+      const ok = validUpi(upiId.value) && upiApp.value.trim().length > 0;
+      upiError.style.display = ok ? 'none' : 'block';
+    } else {
+      upiError.style.display = 'none';
+    }
+  }
+  [pmUpi, pmCod].forEach(r => r.addEventListener('change', () => {
+    upiSection.style.display = pmUpi.checked ? '' : 'none';
+    codSection.style.display = pmCod.checked ? '' : 'none';
+    validateAll();
+  }));
+  [upiId, upiApp].forEach(el => el.addEventListener('input', validateAll));
+  validateAll();
+  confirmBtn.addEventListener('click', async () => {
+    showErrors();
+    if (!validateAll()) return;
+    const method = pmUpi.checked ? 'UPI' : 'COD';
+    confirmLoading.style.display = 'inline-block';
+    confirmText.textContent = 'Processing...';
+    confirmBtn.disabled = true;
+    const fd = new FormData();
+    fd.append('payment_method', method);
+    if (method === 'UPI') {
+      fd.append('upi_id', upiId.value.trim());
+      fd.append('upi_app', upiApp.value.trim());
+      await new Promise(res => setTimeout(res, 1200)); // simulate UPI
+    }
+    try {
+      const res = await fetch('{{ url_for("checkout") }}', { method: 'POST', body: fd, headers: { 'Accept': 'application/json' } });
+      const data = await res.json();
+      if (data && data.ok) {
+        successOverlay.style.display = 'flex';
+        if (window.bootstrap && document.getElementById('confetti')) {
+          // confetti runs via separate script
+        }
+        const badge = document.getElementById('ordersCountBadge');
+        if (badge && typeof data.orders_count !== 'undefined' && data.orders_count !== null) {
+          badge.textContent = data.orders_count;
+          badge.style.display = data.orders_count > 0 ? 'inline-block' : 'none';
+        }
+        setTimeout(() => { window.location.href = "{{ url_for('user_orders') }}"; }, 5600);
+        return;
+      }
+      throw new Error('Checkout failed');
+    } catch (e) {
+      confirmLoading.style.display = 'none';
+      confirmText.textContent = 'Confirm & Place Order';
+      confirmBtn.disabled = false;
+      alert('Error placing order');
+    }
+  });
+});
+</script>
+{% endblock %}
+{% block extra_scripts %}
+<script src="{{ url_for('static', filename='js/confetti.js') }}"></script>
+{% endblock %}

@@ -1,0 +1,33 @@
+<!doctype html>
+<html>
+  <body style="font-family:Arial,Helvetica,sans-serif; margin:0; padding:0; background:#f7f7f7;">
+    <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="background:#f7f7f7;">
+      <tr><td align="center">
+        <table role="presentation" width="600" cellspacing="0" cellpadding="20" style="background:#ffffff; margin:20px; border-radius:8px;">
+          <tr><td>
+            <h2 style="margin:0 0 10px;">Order Confirmed – eGadget Rent</h2>
+            <p style="margin:0 0 10px;">Order ID: {{ order._id }}</p>
+            <hr style="border:none; border-top:1px solid #ddd;">
+            <h3 style="margin:10px 0;">Items</h3>
+            <ul style="padding-left:16px;">
+              {% for it in order.items %}
+              <li style="margin-bottom:6px;">
+                {{ it.brand_name or it.brand or '' }} {{ it.model_name or it.name }} • Qty {{ it.quantity }} • {{ it.days }} day(s) • ₹{{ '%.2f'|format(it.rent_per_day) }}/day
+              </li>
+              {% endfor %}
+            </ul>
+            <p style="margin:10px 0;"><strong>Total:</strong> ₹{{ '%.2f'|format(order.total) }}</p>
+            {% if order.delivery_location %}
+            <p style="margin:10px 0;"><strong>Delivery Location:</strong> {{ order.delivery_location }}</p>
+            {% endif %}
+            {% if order.items and order.items[0].delivery_date %}
+            <p style="margin:10px 0;"><strong>Expected Delivery:</strong> {{ order.items[0].delivery_date }}</p>
+            {% endif %}
+            <p style="margin:10px 0;"><strong>Status:</strong> {{ order.status }}</p>
+            <p style="margin:10px 0;">Support: support@egadget-rent.example</p>
+          </td></tr>
+        </table>
+      </td></tr>
+    </table>
+  </body>
+</html>

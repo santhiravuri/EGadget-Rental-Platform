@@ -1,0 +1,293 @@
+{% extends 'base.html' %}
+{% block title %}Cart - eGadget Rent{% endblock %}
+{% block content %}
+<h4 class="mb-3">Your Rental Cart</h4>
+<div class="row g-3">
+  <div class="col-lg-8">
+    {% for item in items %}
+      <div class="card mb-2">
+        <div class="card-body d-flex align-items-center gap-3">
+          <img src="{{ item.product.image_url or url_for('static', filename='images/placeholder.png') }}" class="rounded border" style="width:80px;height:80px;object-fit:contain" alt="{{ item.product.name }}">
+          <div class="flex-grow-1">
+            <div class="fw-semibold">{{ item.product.brand_name or item.product.brand or '' }} {{ item.product.model_name or item.product.name }}</div>
+            <div class="text-muted small">₹ {{ '%.2f'|format(item.product.rent_per_day or 0) }} / day</div>
+          </div>
+          <form class="d-flex align-items-center gap-2" method="post" action="{{ url_for('api_cart_update') }}">
+            <input type="hidden" name="product_id" value="{{ item.product.id }}">
+            <div class="input-group input-group-sm" style="width:120px">
+              <span class="input-group-text">Days</span>
+              <input type="number" min="1" step="1" name="days" value="{{ item.days }}" class="form-control">
+            </div>
+            <div class="input-group input-group-sm" style="width:110px">
+               <span class="input-group-text">Qty</span>
+               <input type="number" min="1" step="1" name="quantity" value="{{ item.quantity or 1 }}" class="form-control">
+            </div>
+            <button class="btn btn-sm btn-outline-secondary" type="submit">Update</button>
+          </form>
+          <form method="post" action="{{ url_for('api_cart_remove') }}">
+            <input type="hidden" name="product_id" value="{{ item.product.id }}">
+            <button class="btn btn-link text-danger">Remove</button>
+          </form>
+          <div class="ms-3 fw-bold" id="subtotal-{{ item.product.id }}">₹ {{ '%.2f'|format(item.subtotal) }}</div>
+        </div>
+      </div>
+    {% endfor %}
+
+    {% if not items %}
+      <div class="text-center py-5" id="empty-cart-msg">
+        <i class="bi bi-cart-x display-1 text-muted mb-3"></i>
+        <h4 class="text-muted">Your cart is empty</h4>
+        <p class="mb-4">Looks like you haven't added any gadgets yet.</p>
+        <a href="{{ url_for('home') }}" class="btn btn-primary">Start Renting</a>
+      </div>
+    {% endif %}
+  </div>
+  <div class="col-lg-4">
+    <div class="card">
+      <div class="card-body">
+        <div class="d-flex justify-content-between">
+          <div>Total</div>
+          <div class="fw-bold" id="cart-total">₹ {{ '%.2f'|format(total) }}</div>
+        </div>
+        <hr>
+        <button class="btn btn-primary w-100" {% if not items %}disabled{% endif %} data-bs-toggle="modal" data-bs-target="#rentalRulesModal" id="placeRequestBtn">Place Rental Request</button>
+        
+        <!-- Rental Rules Modal -->
+        <div class="modal fade" id="rentalRulesModal" tabindex="-1" aria-labelledby="rentalRulesModalLabel" aria-hidden="true">
+          <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+              <div class="modal-header">
+                <h5 class="modal-title" id="rentalRulesModalLabel">Rental Terms & Conditions</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+              </div>
+              <div class="modal-body">
+                <h6 class="fw-bold mb-3">Please read and accept the following rental rules:</h6>
+                
+                <div class="mb-3">
+                <h6><i class="bi bi-calendar2-week text-primary me-2"></i>Rental Duration</h6>
+                  <p class="ms-4">Rental duration starts from the day of delivery. You must return the item by the specified return date. Minimum rental period is 1 day.</p>
+                </div>
+                
+                <div class="mb-3">
+                <h6><i class="bi bi-shield-check text-warning me-2"></i>Damage Policy</h6>
+                  <p class="ms-4">You are responsible for any damage beyond normal wear and tear. A damage assessment fee will be charged based on the extent of damage. Items must be returned in the same working condition as received.</p>
+                </div>
+                
+                <div class="mb-3">
+                <h6><i class="bi bi-clock-fill text-danger me-2"></i>Late Return Penalty</h6>
+                  <p class="ms-4">Late returns are subject to a penalty of <strong>₹50 per day</strong> for each day past the due date. This penalty is automatically calculated and will be charged to your account.</p>
+                </div>
+                
+                <div class="form-check mt-4">
+                  <input class="form-check-input" type="checkbox" id="acceptRules" required>
+                  <label class="form-check-label" for="acceptRules">
+                    I have read and agree to the rental terms and conditions stated above
+                  </label>
+                </div>
+                <hr class="my-3">
+                <h6 class="fw-bold mb-2">Confirm Order Details</h6>
+                <div class="row g-3">
+                  <div class="col-md-6">
+                    <label class="form-label">Delivery Date</label>
+                    <input type="date" class="form-control" id="cartDeliveryDate" required>
+                    <div class="text-danger small mt-1" id="cartDateError" style="display:none">Select a valid future date</div>
+                  </div>
+                  <div class="col-md-6">
+                    <label class="form-label">Payment Type</label>
+                    <div class="form-check">
+                      <input class="form-check-input" type="radio" name="cartPaymentMethod" id="cartPmUpi" value="UPI">
+                      <label class="form-check-label" for="cartPmUpi">Online Payment (UPI)</label>
+                    </div>
+                    <div class="form-check">
+                      <input class="form-check-input" type="radio" name="cartPaymentMethod" id="cartPmCod" value="COD">
+                      <label class="form-check-label" for="cartPmCod">Cash on Delivery</label>
+                    </div>
+                  </div>
+                </div>
+                <div class="row g-3 mt-1" id="cartUpiSection" style="display:none">
+                  <div class="col-md-6">
+                    <label class="form-label">UPI App</label>
+                    <select id="cartUpiApp" class="form-select">
+                      <option value="">Select App</option>
+                      <option>Google Pay</option>
+                      <option>PhonePe</option>
+                      <option>Paytm</option>
+                    </select>
+                  </div>
+                  <div class="col-md-6">
+                    <label class="form-label">UPI ID</label>
+                    <input id="cartUpiId" type="text" class="form-control" placeholder="name@bank">
+                    <div class="text-danger small mt-1" id="cartUpiError" style="display:none">Enter a valid UPI ID (e.g. name@bank)</div>
+                  </div>
+                </div>
+              </div>
+              <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <form method="post" action="{{ url_for('checkout') }}" id="checkoutForm" class="d-inline">
+                  <input type="hidden" name="payment_method" id="cartPaymentMethodHidden">
+                  <input type="hidden" name="upi_id" id="cartUpiIdHidden">
+                  <input type="hidden" name="upi_app" id="cartUpiAppHidden">
+                  <input type="hidden" name="delivery_date" id="cartDeliveryDateHidden">
+                  <button type="submit" class="btn btn-primary" id="proceedCheckout" disabled>Proceed to Checkout</button>
+                </form>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+  const acceptCheckbox = document.getElementById('acceptRules');
+  const proceedBtn = document.getElementById('proceedCheckout');
+  const cartDeliveryDate = document.getElementById('cartDeliveryDate');
+  const cartDateError = document.getElementById('cartDateError');
+  const pmUpi = document.getElementById('cartPmUpi');
+  const pmCod = document.getElementById('cartPmCod');
+  const upiSection = document.getElementById('cartUpiSection');
+  const upiId = document.getElementById('cartUpiId');
+  const upiApp = document.getElementById('cartUpiApp');
+  const upiError = document.getElementById('cartUpiError');
+  const pmHidden = document.getElementById('cartPaymentMethodHidden');
+  const upiIdHidden = document.getElementById('cartUpiIdHidden');
+  const upiAppHidden = document.getElementById('cartUpiAppHidden');
+  const dateHidden = document.getElementById('cartDeliveryDateHidden');
+  const checkoutForm = document.getElementById('checkoutForm');
+  
+  if (acceptCheckbox && proceedBtn) {
+    acceptCheckbox.addEventListener('change', (e) => {
+      updateProceedDisabled();
+    });
+  }
+
+  // Set min date to today
+  if (cartDeliveryDate) {
+    const today = new Date();
+    const min = new Date(today.getFullYear(), today.getMonth(), today.getDate()).toISOString().split('T')[0];
+    cartDeliveryDate.setAttribute('min', min);
+  }
+
+  function validUpi(id) {
+    return /^[a-zA-Z0-9._-]+@[a-zA-Z0-9._-]+$/.test((id || '').trim());
+  }
+
+  function validateAll() {
+    let ok = true;
+    // Date validation
+    const dval = cartDeliveryDate?.value;
+    if (!dval) { ok = false; }
+    else {
+      const todayStr = new Date().toISOString().split('T')[0];
+      if (dval < todayStr) ok = false;
+    }
+    cartDateError.style.display = ok && cartDeliveryDate?.value ? 'none' : 'block';
+
+    // Payment validation
+    const method = pmUpi?.checked ? 'UPI' : (pmCod?.checked ? 'COD' : '');
+    if (!method) ok = false;
+    if (method === 'UPI') {
+      const upiOk = validUpi(upiId.value) && (upiApp.value || '').trim().length > 0;
+      upiError.style.display = upiOk ? 'none' : 'block';
+      ok = ok && upiOk;
+    } else {
+      upiError.style.display = 'none';
+    }
+    // Hidden fields
+    pmHidden.value = method || '';
+    upiIdHidden.value = (method === 'UPI') ? (upiId.value || '').trim() : '';
+    upiAppHidden.value = (method === 'UPI') ? (upiApp.value || '').trim() : '';
+    dateHidden.value = cartDeliveryDate?.value || '';
+    return ok;
+  }
+
+  function updateProceedDisabled() {
+    proceedBtn.disabled = !(acceptCheckbox?.checked && validateAll());
+  }
+
+  [cartDeliveryDate, upiId, upiApp].forEach(el => el?.addEventListener('input', updateProceedDisabled));
+  [pmUpi, pmCod].forEach(r => r?.addEventListener('change', () => {
+    upiSection.style.display = pmUpi.checked ? '' : 'none';
+    updateProceedDisabled();
+  }));
+  updateProceedDisabled();
+
+  // Ensure validity before submit
+  checkoutForm?.addEventListener('submit', (e) => {
+    if (!validateAll()) {
+      e.preventDefault();
+    }
+  });
+
+  // Cart Update AJAX
+  const updateForms = document.querySelectorAll('form[action*="/api/cart/update"]');
+  updateForms.forEach(form => {
+    form.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const btn = form.querySelector('button');
+      const originalText = btn.textContent;
+      btn.textContent = '...';
+      btn.disabled = true;
+
+      const formData = new FormData(form);
+      try {
+        const res = await fetch(form.action, {
+           method: 'POST',
+           body: formData
+        });
+        const data = await res.json();
+        if (data.ok || data.success) {
+           const pid = formData.get('product_id');
+           const subEl = document.getElementById(`subtotal-${pid}`);
+           if (subEl) subEl.textContent = `₹ ${data.subtotal.toFixed(2)}`;
+           
+           const totalEl = document.getElementById('cart-total');
+           if (totalEl) totalEl.textContent = `₹ ${data.total.toFixed(2)}`;
+           
+           const badge = document.getElementById('cart-badge');
+           if (badge) badge.textContent = data.cart_count;
+        } else {
+           alert(data.message || 'Update failed');
+        }
+      } catch (err) {
+        console.error(err);
+        alert('An error occurred');
+      } finally {
+        btn.textContent = originalText;
+        btn.disabled = false;
+      }
+    });
+  });
+
+  // Cart Remove AJAX
+  const removeForms = document.querySelectorAll('form[action*="/api/cart/remove"]');
+  removeForms.forEach(form => {
+    form.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      if (!confirm('Remove this item?')) return;
+      
+      const formData = new FormData(form);
+      try {
+        const res = await fetch(form.action, {
+           method: 'POST',
+           body: formData
+        });
+        const data = await res.json();
+        if (data.ok || data.success) {
+           location.reload(); 
+        } else {
+           alert(data.message || 'Removal failed');
+        }
+      } catch (err) {
+        console.error(err);
+        alert('An error occurred');
+      }
+    });
+  });
+});
+</script>
+{% endblock %}
+
+

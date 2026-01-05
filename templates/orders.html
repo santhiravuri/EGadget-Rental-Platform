@@ -1,0 +1,281 @@
+{% extends 'base.html' %}
+{% block title %}My Orders - eGadget Rent{% endblock %}
+{% block content %}
+<h4 class="mb-3">My Orders</h4>
+<style>
+  .order-card .order-meta { color: var(--text-secondary); font-size: .9rem; }
+  .order-card .order-total { font-weight: 700; }
+  .order-card .item-row { display:flex; align-items:center; gap:.75rem; padding:.5rem .75rem; border-radius:12px; text-decoration:none; color: inherit; transition: background-color .15s ease, transform .15s ease; }
+  .order-card .item-row:hover { background: rgba(15, 23, 42, 0.06); transform: translateY(-1px); }
+  .order-card .item-img { width:52px; height:52px; object-fit:contain; border:1px solid #e2e8f0; border-radius:10px; background:#fff; }
+  .order-card .item-title { font-weight:600; }
+  .status-steps { display:flex; gap:.4rem; align-items:center; flex-wrap:wrap; }
+  .status-steps .step { padding:.25rem .5rem; border-radius:999px; border:1px solid var(--border-color); font-size:.8rem; color:var(--text-secondary); background: transparent; }
+  .status-steps .step.current { background:#2563eb; color:#fff; border-color:#2563eb; }
+  .status-steps .step.done { background:#16a34a; color:#fff; border-color:#16a34a; }
+  .order-actions .btn { width:100%; }
+  .order-actions .btn + .btn { margin-top:.5rem; }
+</style>
+
+{% if orders %}
+  {% for order in orders %}
+  <div class="card mb-3 order-card">
+    <div class="card-header d-flex justify-content-between align-items-center">
+      <div>
+        <div class="order-meta">Order #{{ order.id }}</div>
+        <div>
+          <span class="badge bg-primary">{{ order.status }}</span>
+        </div>
+      </div>
+      <div class="text-end">
+        <div class="order-meta">Placed: {{ order.created_at_str or 'N/A' }}</div>
+        <div class="order-total">₹ {{ '%.2f'|format((order.total or 0) + (order.late_penalty or 0)) }}</div>
+      </div>
+    </div>
+    <div class="card-body">
+      <div class="row">
+        <div class="col-md-8">
+          <div class="status-steps mb-3">
+            {% set s = order.status %}
+            <span class="step {{ 'current' if s in ['Placed','Pending Payment','Paid'] else '' }}">Placed</span>
+            <span class="step {{ 'current' if s == 'Confirmed' else '' }}">Confirmed</span>
+            <span class="step {{ 'current' if s == 'Dispatched' else '' }}">Dispatched</span>
+            <span class="step {{ 'current' if s == 'In Use' else '' }}">In Use</span>
+            <span class="step {{ 'current' if s == 'Returned' else '' }}">Returned</span>
+            <span class="step {{ 'current' if s in ['Completed','Delivered'] else '' }}">Completed</span>
+          </div>
+          <h6 class="mb-2">Items</h6>
+          <div class="d-flex flex-column">
+            {% for item in order.order_items %}
+            <a class="item-row" href="{{ url_for('product_detail', product_id=item.product_id) }}">
+              <img class="item-img" src="{{ item.image_url or url_for('static', filename='images/placeholder.png') }}" alt="{{ item.name }}">
+              <div class="flex-grow-1">
+                <div class="item-title">{{ (item.brand_name or item.brand or '') }} {{ item.model_name or item.name }}</div>
+                <div class="order-meta">
+                  {% if item.quantity %}Qty {{ item.quantity }}{% endif %} • {{ item.days }} day(s) • ₹{{ '%.2f'|format(item.rent_per_day) }}/day
+                </div>
+              </div>
+              <div class="fw-semibold">₹{{ '%.2f'|format(item.subtotal) }}</div>
+            </a>
+            {% endfor %}
+          </div>
+          
+          {% if order.return_date_str %}
+          <div class="mt-3">
+            <strong>Return Date:</strong> 
+            {{ order.return_date_str }}
+          </div>
+          {% endif %}
+          
+          {% if order.late_days and order.late_days > 0 %}
+          <div class="alert alert-warning mt-3">
+            <i class="bi bi-exclamation-triangle-fill me-2"></i>
+            <strong>Late Return:</strong> {{ order.late_days }} day(s) late
+          </div>
+          {% endif %}
+        </div>
+        <div class="col-md-4">
+          <div class="border-start ps-3">
+            <div class="mb-2"><strong>Payment:</strong> {{ order.payment_method|payment_label }}</div>
+            {% if order.delivery_location %}
+            <div class="mb-2 d-flex align-items-center">
+              <strong class="me-1">Location:</strong>
+              <span id="locText{{ order.id }}" class="me-2">{{ order.delivery_location }}</span>
+              {% if order.ui_status == 'Placed' %}
+              <button class="btn btn-sm btn-outline-secondary p-1" type="button" aria-label="Edit delivery location" onclick="toggleLocForm('{{ order.id }}')">
+                <i class="bi bi-pencil"></i>
+              </button>
+              {% endif %}
+            </div>
+            {% endif %}
+            {% if order.ui_status == 'Placed' %}
+            <form id="locForm{{ order.id }}" class="mb-2" method="post" action="{{ url_for('edit_order', order_id=order.id) }}" style="display:none;">
+              <div class="input-group input-group-sm">
+                <input type="text" name="delivery_location" class="form-control" value="{{ order.delivery_location or '' }}" placeholder="Edit delivery address">
+                <button class="btn btn-primary" type="submit">Save</button>
+                <button class="btn btn-outline-secondary" type="button" onclick="toggleLocForm('{{ order.id }}')">Cancel</button>
+              </div>
+            </form>
+            {% endif %}
+            {% if order.contact_phone %}<div class="mb-2"><strong>Phone:</strong> {{ order.contact_phone }}</div>{% endif %}
+            <div class="d-flex justify-content-between mb-2">
+              <span>Subtotal:</span>
+              <span>₹ {{ '%.2f'|format(order.total_before_discount) }}</span>
+            </div>
+            {% if order.discount > 0 %}
+            <div class="d-flex justify-content-between mb-2 text-success">
+              <span>Discount:</span>
+              <span>-₹ {{ '%.2f'|format(order.discount) }}</span>
+            </div>
+            {% endif %}
+            {% if order.late_penalty and order.late_penalty > 0 %}
+            <div class="d-flex justify-content-between mb-2 text-danger">
+              <span>Late Penalty:</span>
+              <span>+₹ {{ '%.2f'|format(order.late_penalty) }}</span>
+            </div>
+            {% endif %}
+            <hr>
+            <div class="d-flex justify-content-between fw-bold">
+              <span>Total:</span>
+              <span>₹ {{ '%.2f'|format((order.total or 0) + (order.late_penalty or 0)) }}</span>
+            </div>
+            <div class="mt-3 order-actions">
+              {% if order.status not in ['Dispatched','In Use','Returned','Completed','Delivered','Cancelled'] %}
+              <button class="btn btn-danger btn-sm" data-bs-toggle="modal" data-bs-target="#cancelModal{{ order.id }}">Cancel Order</button>
+              {% endif %}
+              <button class="btn btn-outline-secondary btn-sm" data-bs-toggle="modal" data-bs-target="#supportModal{{ order.id }}">Support</button>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="modal fade" id="cancelModal{{ order.id }}" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog">
+          <form class="modal-content" method="post" action="{{ url_for('cancel_order', order_id=order.id) }}">
+            <div class="modal-header">
+              <h5 class="modal-title">Cancel Order</h5>
+              <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+              <div class="mb-3">
+                <label class="form-label">Reason</label>
+                <input type="text" name="reason" class="form-control" placeholder="Reason for cancellation">
+              </div>
+            </div>
+            <div class="modal-footer">
+              <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+              <button type="submit" class="btn btn-danger">Confirm Cancel</button>
+            </div>
+          </form>
+        </div>
+      </div>
+      <div class="modal fade" id="editDeliveryModal{{ order.id }}" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog">
+          <form class="modal-content" method="post" action="{{ url_for('edit_order', order_id=order.id) }}">
+            <div class="modal-header">
+              <h5 class="modal-title">Edit Delivery Details</h5>
+              <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+              <div class="mb-3">
+                <label class="form-label">Delivery Location</label>
+                <input type="text" name="delivery_location" class="form-control" value="{{ order.delivery_location or '' }}" placeholder="Address">
+              </div>
+              <div class="mb-3">
+                <label class="form-label">Contact Phone</label>
+                <input type="text" name="phone" class="form-control" placeholder="Phone number">
+              </div>
+            </div>
+            <div class="modal-footer">
+              <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+              <button type="submit" class="btn btn-primary">Save</button>
+            </div>
+          </form>
+        </div>
+      </div>
+      <div class="modal fade" id="extendModal{{ order.id }}" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog">
+          <form class="modal-content extend-form" method="post" action="{{ url_for('extend_rental', order_id=order.id) }}" data-order-id="{{ order.id }}">
+            <div class="modal-header">
+              <h5 class="modal-title">Extend Rental Period</h5>
+              <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+              <div class="mb-3">
+                <label class="form-label">Extra Days</label>
+                <input type="number" name="extra_days" class="form-control extra-days-input" min="1" value="1">
+              </div>
+              <div class="alert alert-info d-flex justify-content-between">
+                <span>Additional Cost</span>
+                <strong class="extend-cost" data-items='{{ order.order_items|tojson }}'>₹ 0.00</strong>
+              </div>
+            </div>
+            <div class="modal-footer">
+              <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+              <button type="submit" class="btn btn-success">Confirm Extension</button>
+            </div>
+          </form>
+        </div>
+      </div>
+      <div class="modal fade" id="pickupModal{{ order.id }}" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog">
+          <form class="modal-content" method="post" action="{{ url_for('request_pickup', order_id=order.id) }}">
+            <div class="modal-header">
+              <h5 class="modal-title">Request Pickup</h5>
+              <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+              <div class="mb-3">
+                <label class="form-label">Preferred Pickup Date</label>
+                <input type="date" name="pickup_date" class="form-control">
+              </div>
+              <div class="mb-3">
+                <label class="form-label">Notes</label>
+                <textarea name="notes" class="form-control" rows="3" placeholder="Any instructions"></textarea>
+              </div>
+            </div>
+            <div class="modal-footer">
+              <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+              <button type="submit" class="btn btn-warning">Submit Request</button>
+            </div>
+          </form>
+        </div>
+      </div>
+      <div class="modal fade" id="supportModal{{ order.id }}" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog">
+          <form class="modal-content" method="post" action="{{ url_for('order_support', order_id=order.id) }}">
+            <div class="modal-header">
+              <h5 class="modal-title">Support</h5>
+              <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+              <div class="mb-3">
+                <label class="form-label">Describe your issue</label>
+                <textarea name="message" class="form-control" rows="3" placeholder="Write your issue"></textarea>
+              </div>
+            </div>
+            <div class="modal-footer">
+              <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+              <button type="submit" class="btn btn-outline-secondary">Send</button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+  </div>
+  {% endfor %}
+{% else %}
+  <div class="alert alert-info">
+    <i class="bi bi-info-circle-fill me-2"></i>
+    You haven't placed any orders yet. <a href="{{ url_for('home') }}">Browse products</a> to get started!
+  </div>
+{% endif %}
+{% block extra_scripts %}
+<script>
+function toggleLocForm(id) {
+  const f = document.getElementById('locForm' + id);
+  if (!f) return;
+  f.style.display = (f.style.display === 'none' || !f.style.display) ? 'block' : 'none';
+}
+document.querySelectorAll('.extend-form').forEach(function(form){
+  var costEl = form.querySelector('.extend-cost');
+  var items = [];
+  try { items = JSON.parse(costEl.getAttribute('data-items')) || []; } catch(e) { items = []; }
+  var input = form.querySelector('.extra-days-input');
+  function recalc(){
+    var d = parseInt(input.value || '0');
+    var total = 0;
+    if (d > 0) {
+      items.forEach(function(it){
+        var rent = parseFloat(it.rent_per_day || 0);
+        var qty = parseInt(it.quantity || 1);
+        total += rent * d * qty;
+      });
+    }
+    costEl.textContent = '₹ ' + (total.toFixed(2));
+  }
+  input.addEventListener('input', recalc);
+  recalc();
+});
+</script>
+{% endblock %}
+{% endblock %}
