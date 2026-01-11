@@ -4,7 +4,6 @@
 EGadget Rental Platform is a full-stack web application that allows users to rent electronic gadgets such as laptops, smartphones, tablets, monitors, and accessories for a selected number of days.
 The platform supports secure user registration with OTP verification, category-based product navigation, cart & wishlist, order placement, and admin management.
 
-This project is developed as a Final Year Academic Project and follows industry-level architecture and deployment practices.
 
 🎯 Project Objectives
 
