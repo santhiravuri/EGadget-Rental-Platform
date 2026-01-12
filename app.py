@@ -9,12 +9,23 @@ import ssl
 from dotenv import load_dotenv
 from services.email_service import send_email_html, send_order_confirmation_email, send_order_cancellation_email
 from services import scheduler
+from pymongo import MongoClient
 
 from models.db import users_col, products_col, orders_col, otp_col, admins_col, carts_col
 from flask_mail import Mail, Message
 
-
 load_dotenv()
+# Get MongoDB URI
+MONGO_URI = os.getenv("MONGO_URI")
+
+if not MONGO_URI:
+    raise ValueError("MONGO_URI environment variable is not set")
+
+client = MongoClient(MONGO_URI)
+db = client["egadget_db"]
+ 
+print("Connected successfully")
+# load_dotenv()
 def create_app() -> Flask:
     app = Flask(__name__)
     app.secret_key = os.getenv("SECRET_KEY", "dev-secret-key")
